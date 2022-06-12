@@ -59,7 +59,8 @@ dynamicSample <-function() {
     datecheck 'Input Date' DateInput '2000-01-01' 200
     boolean 'Check/Uncheck box' Checkbox FALSE 100
     cylinder 'Input Cylinders' TextBox 6 100
-    radio 'True/False' RadioTF True 100")
+    radio 'True/False' RadioTF True 100
+    multchoice 'Pick A, B, C, or D' CheckboxGABCD A 200")
 
 
     # On-load event, handles insertion of elements described by table
@@ -93,11 +94,22 @@ dynamicSample <-function() {
         else if(grepl("Radio.*", inputType)) {
           # Cut "Radio" off of string to collect ID, send to lookup
           lookupID <- strsplit(inputType, "Radio")[[1]][2]
-          htmlInsert <- lookup(lookupID, df[i,])
+          choicesInsert <- lookup(lookupID, df[i,])
           insertUI(selector = "#submit",
                    where = "beforeBegin",
                    ui = radioButtons(df[i,1], df[i,2],
-                   choices = htmlInsert,
+                   choices = choicesInsert,
+                   selected = df[i,4],
+                   width = paste(sep="", df[i,5], "px")))
+        }
+        else if(grepl("CheckboxG.*", inputType)) {
+          # Same cut-off process for checkbox group input
+          lookupID <- strsplit(inputType, "CheckboxG")[[1]][2]
+          choicesInsert <- lookup(lookupID, df[i,])
+          insertUI(selector = "#submit",
+                   where = "beforeBegin",
+                   ui = checkboxGroupInput(df[i,1], df[i,2],
+                   choices = choicesInsert,
                    selected = df[i,4],
                    width = paste(sep="", df[i,5], "px")))
         }
