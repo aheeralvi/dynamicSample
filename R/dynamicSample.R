@@ -52,19 +52,19 @@ dynamicSample <-function() {
     # Df mimics table read in from another file
     df <- read.table(header = TRUE, text = "
 
-  ID Label InputType DefaultValue Width
+    ID Label InputType DefaultValue Width
 
-  datecheck 'Input Date' DateInput '2000-01-01' 200
-  boolean 'Check/Uncheck box' Checkbox FALSE 100
-  cylinder 'Input Cylinders' TextBox 6 100
+    datecheck 'Input Date' DateInput '2000-01-01' 200
+    boolean 'Check/Uncheck box' Checkbox FALSE 100
+    cylinder 'Input Cylinders' TextBox 6 100
+    radio 'True/False' RadioTF True 100")
 
 
-")
     # On-load event, insertion of elements described
     # Always run on init, ignore NULL eval of input$submit, destroy event after first run
     observeEvent(input$submit, ignoreNULL = FALSE, ignoreInit = FALSE, once = TRUE, {
 
-      # iterate thru
+      # iterate through by row
       for(i in 1:nrow(df)) {
         inputType <- df[i,3]
 
@@ -88,15 +88,38 @@ dynamicSample <-function() {
                                       value = as.logical(df[i,4]),
                                       width = paste(sep="", df[i,5], "px")))
         }
+        else if(grepl("Radio.*", inputType)) {
+          lookupID <- strsplit(inputType, "Radio")[[1]][2]
+          htmlInsert <- lookup(lookupID, df[i,])
+          insertUI(selector = "#submit",
+                   where = "beforeBegin",
+                   ui = radioButtons(df[i,1], df[i,2],
+                   choices = htmlInsert,
+                   selected = df[i,4],
+                   width = paste(sep="", df[i,5], "px")))
+        }
       }
-
-
-
     })
-
-
   }
 
   viewer <- dialogViewer("Enter Number of __________", width = 1000)
   runGadget(ui, server, viewer = viewer)
 }
+
+
+lookup <- function(lookupID, values) {
+
+  lookupTable <- read.table(header = TRUE, text = "
+    ID Options
+    TF 'True False'
+    ABCD 'A B C D'")
+
+  for(i in 1:nrow(lookupTable)) {
+    if(lookupTable[i,1] == lookupID){
+      radioChoices <- strsplit(lookupTable[i,2], " ")
+    }
+  }
+  return(radioChoices[[1]])
+}
+
+
