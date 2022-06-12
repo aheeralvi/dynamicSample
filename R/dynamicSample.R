@@ -1,12 +1,13 @@
 library(shiny)
 library(miniUI)
 
-
-
-
-
+# Gadget
 dynamicSample <-function() {
+
+  # UI
   ui <- miniPage(
+
+    # See utils.R
     includeHighlightJs(),
 
     # Test inline css
@@ -34,7 +35,7 @@ dynamicSample <-function() {
              ")
       )),
 
-    # Standard Submit/Cancel Buttons on the bottom of page
+    # Standard Submit/Cancel Buttons on the bottom
     miniContentPanel(
       HTML("<button id = 'submit'
            type ='button'
@@ -45,8 +46,9 @@ dynamicSample <-function() {
            class = 'btn-overload btn btn-default action-button shiny-bound-input'>
            Cancel</button>")
     )
-  )
+  ) # End UI
 
+  # Server
   server <- function(input, output, session) {
 
     # Df mimics table read in from another file
@@ -60,11 +62,11 @@ dynamicSample <-function() {
     radio 'True/False' RadioTF True 100")
 
 
-    # On-load event, insertion of elements described
-    # Always run on init, ignore NULL eval of input$submit, destroy event after first run
+    # On-load event, handles insertion of elements described by table
+    # Run on init, ignore input$submit=NULL, destroy event after first run
     observeEvent(input$submit, ignoreNULL = FALSE, ignoreInit = FALSE, once = TRUE, {
 
-      # iterate through by row
+      # Iterate by row
       for(i in 1:nrow(df)) {
         inputType <- df[i,3]
 
@@ -89,6 +91,7 @@ dynamicSample <-function() {
                                       width = paste(sep="", df[i,5], "px")))
         }
         else if(grepl("Radio.*", inputType)) {
+          # Cut "Radio" off of string to collect ID, send to lookup
           lookupID <- strsplit(inputType, "Radio")[[1]][2]
           htmlInsert <- lookup(lookupID, df[i,])
           insertUI(selector = "#submit",
@@ -99,23 +102,28 @@ dynamicSample <-function() {
                    width = paste(sep="", df[i,5], "px")))
         }
       }
-    })
-  }
+    }) # End onload
+  } # End server
 
   viewer <- dialogViewer("Enter Number of __________", width = 1000)
   runGadget(ui, server, viewer = viewer)
-}
+} # End gadget
 
 
+# Return vector of choices for a control widget requiring multiple options
 lookup <- function(lookupID, values) {
 
+  # Mimic lookup table read in from file
   lookupTable <- read.table(header = TRUE, text = "
     ID Options
     TF 'True False'
     ABCD 'A B C D'")
 
+  # By row
   for(i in 1:nrow(lookupTable)) {
+    # Identify correct id
     if(lookupTable[i,1] == lookupID){
+      # Split string of all choices into vector containing choices
       radioChoices <- strsplit(lookupTable[i,2], " ")
     }
   }
