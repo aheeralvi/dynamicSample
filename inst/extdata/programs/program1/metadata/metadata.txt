@@ -1,0 +1,10 @@
+ID Label InputType DefaultValue Width LookupID CollectColumn Token DataType
+
+datecheck 'Input Date' DateInput '2000-01-01' 200 NA NA {InputDate} Date
+boolean 'Check/Uncheck box' Checkbox FALSE 100 NA NA {InputTF} Bool
+cylinder 'Input Cylinders' TextBox 6 100 NA NA {InputCyl} Number
+radio 'True/False' Radio True 100 TF NA {InputRadio} String
+multchoice 'Pick A, B, C, or D' CheckboxG A 200 ABCD NA {InputABCD} String
+selectbox 'Species' SingleSelect 'Setosa' 200 Species NA {InputSelect} String
+select2 'Species Again' MultiSelect 'Setosa' 200 Species NA {InputMultiSelect} String
+collectTest 'Species' SingleSelect 'Setosa' 200 Collect Species {InputCollect} String

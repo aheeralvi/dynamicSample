@@ -51,18 +51,9 @@ dynamicSample <-function() {
   # Server
   server <- function(input, output, session) {
 
-    # Df mimics table read in from another file
-    df <- read.table(header = TRUE, text = "
+    # Df table read in from another file
 
-    ID Label InputType DefaultValue Width
-
-    datecheck 'Input Date' DateInput '2000-01-01' 200
-    boolean 'Check/Uncheck box' Checkbox FALSE 100
-    cylinder 'Input Cylinders' TextBox 6 100
-    radio 'True/False' RadioTF True 100
-    multchoice 'Pick A, B, C, or D' CheckboxGABCD A 200")
-
-
+    df <- read.table("/Users/aheeralvi/witchcraft/dynamicSample/inst/extdata/programs/program1/metadata/metadata.txt", header = TRUE)
     # On-load event, handles insertion of elements described by table
     # Run on init, ignore input$submit=NULL, destroy event after first run
     observeEvent(input$submit, ignoreNULL = FALSE, ignoreInit = FALSE, once = TRUE, {
@@ -93,8 +84,8 @@ dynamicSample <-function() {
         }
         else if(grepl("Radio.*", inputType)) {
           # Cut "Radio" off of string to collect ID, send to lookup
-          lookupID <- strsplit(inputType, "Radio")[[1]][2]
-          choicesInsert <- lookup(lookupID, df[i,])
+          lookupID <- df[i,6]
+          choicesInsert <- lookup(lookupID)
           insertUI(selector = "#submit",
                    where = "beforeBegin",
                    ui = radioButtons(df[i,1], df[i,2],
@@ -104,8 +95,8 @@ dynamicSample <-function() {
         }
         else if(grepl("CheckboxG.*", inputType)) {
           # Same cut-off process for checkbox group input
-          lookupID <- strsplit(inputType, "CheckboxG")[[1]][2]
-          choicesInsert <- lookup(lookupID, df[i,])
+          lookupID <- df[i,6]
+          choicesInsert <- lookup(lookupID)
           insertUI(selector = "#submit",
                    where = "beforeBegin",
                    ui = checkboxGroupInput(df[i,1], df[i,2],
@@ -113,8 +104,83 @@ dynamicSample <-function() {
                    selected = df[i,4],
                    width = paste(sep="", df[i,5], "px")))
         }
+        else if(inputType == "SingleSelect") {
+          lookupID <- df[i,6]
+          # include option for collection example
+          choicesInsert <- lookup(lookupID, df[i,7])
+          insertUI(selector = "#submit",
+                   where = "beforeBegin",
+                   ui = selectInput(df[i,1], df[i,2],
+                   choices = choicesInsert, selected = df[i,4], width = paste(sep="",df[i,5],"px")))
+        }
+        else if(inputType == "MultiSelect") {
+          lookupID <- df[i,6]
+          choicesInsert <- lookup(lookupID)
+          insertUI(selector = "#submit",
+                   where = "beforeBegin",
+                   ui = selectInput(df[i,1], df[i,2],
+                                    choices = choicesInsert, multiple = TRUE, selected = df[i,4], width = paste(sep="",df[i,5],"px")))
+        }
       }
     }) # End onload
+
+    # When submit is pressed,
+    observeEvent(input$submit, ignoreNULL = TRUE, ignoreInit = TRUE, {
+
+      # Copy sample program
+      path <- getwd()
+      path <- paste(path, "/inst/extdata/programs/program1/SampleReportProgram2.R", sep="")
+      fileText <- readLines(path)
+
+
+      # list_inputs <- list(input$datecheck, input$boolean, input$cylinder, input$radio, input$multchoice)
+      # names(list_inputs) <- df[1]
+      # print(list_inputs)
+
+
+      # Replace tag string with proper input value
+      speciesName <- input$selectbox
+      speciesName <- paste(sep="","\"",speciesName,"\"")
+
+      fileText <- gsub("\"{InputSelect}\"", fixed = TRUE, tolower(speciesName), fileText)
+
+
+      # Create temporary directory if doesn't exist
+      dir <- tempdir()
+      if (!dir.exists(dir))
+        dir.create(dir)
+
+      # Else cleanup directory
+      else {
+        ls <- list.files(
+          dir,
+          full.names = TRUE,
+          pattern = "file_....-..-.._........_temp.R")
+        unlink(ls, recursive = TRUE)
+      }
+
+
+      # Create a filename based on date/time
+      timeSave <- toString(Sys.time())
+
+      dateSplit1 <- strsplit(timeSave, " ")
+      date <- dateSplit1[[1]][1]
+      time <- dateSplit1[[1]][2]
+      time <- gsub(":", ".", time)
+
+      customName <- paste(sep="" ,"file_", date, "_", time, "_temp.R")
+      customName <- paste(sep="/", tempdir(), customName)
+
+      # Add the modified text into file in temp directory
+      file.create(customName)
+      writeLines(fileText, customName, sep = "\n")
+
+      # Run modified program
+      source(customName)
+
+      stopApp()
+    })
+
   } # End server
 
   viewer <- dialogViewer("Enter Number of __________", width = 1000)
@@ -123,23 +189,46 @@ dynamicSample <-function() {
 
 
 # Return vector of choices for a control widget requiring multiple options
-lookup <- function(lookupID, values) {
+lookup <- function(lookupID, collectID) {
 
-  # Mimic lookup table read in from file
-  lookupTable <- read.table(header = TRUE, text = "
-    ID Options
-    TF 'True False'
-    ABCD 'A B C D'")
+  # Lookup table read in from file
+
+  lookupTable <- read.table("/Users/aheeralvi/witchcraft/dynamicSample/inst/extdata/common/lookupTable.txt")
 
   # By row
   for(i in 1:nrow(lookupTable)) {
     # Identify correct id
-    if(lookupTable[i,1] == lookupID){
+    if(lookupTable[i,1] == lookupID) {
       # Split string of all choices into vector containing choices
       radioChoices <- strsplit(lookupTable[i,2], " ")
     }
   }
-  return(radioChoices[[1]])
+
+  # Collect options from data if requested, otherwise return values from lookup table
+  if(lookupID == "Collect") {
+    radioChoices <- collectChoices(collectID)
+    return(radioChoices)
+  }
+  else {
+    return(radioChoices[[1]])
+    }
+
 }
+
+
+# Collect choices for buttons from data dynamically
+collectChoices <- function(collectID) {
+
+  # Copy in data
+  dataCopy <- read.csv("/Users/aheeralvi/witchcraft/dynamicSample/inst/extdata/programs/program1/data/iris.csv")
+
+  # Search for column name on which to block choices
+  columnNames <- names(dataCopy)
+  searchCol <- match(collectID, columnNames)
+
+  # return unique values only
+  return(unique(dataCopy[[searchCol]]))
+}
+
 
 

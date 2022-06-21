@@ -1,0 +1,6 @@
+    ID Options
+TF 'True False'
+ABCD 'A B C D'
+EyeColor 'Brown Blue Hazel Green'
+HairColor 'Brown Black Red Blond'
+Species 'Setosa Versicolor Virginica
